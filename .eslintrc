@@ -1,0 +1,21 @@
+{
+	"parser": "babel-eslint",
+	"env": {
+		"browser": true,
+		"es6": true,
+		"node": true
+	},
+	"extends": ["eslint:recommended", "plugin:prettier/recommended"],
+	"globals": { "SpreadsheetApp": true, "LinearOptimizationService": true },
+	"parserOptions": {
+		"ecmaVersion": 2018,
+		"sourceType": "module"
+	},
+	"rules": {
+		"strict": 2,
+		"indent": ["off", "tab"],
+		"semi": ["warn", "always"],
+		"no-multi-spaces": "error",
+		"no-var": "error"
+	}
+}
