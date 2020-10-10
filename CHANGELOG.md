@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2020-08-11
-
-Initial push of Javascript Module Template.
+## [1.1.0] - 2020-10-09
 
 ### Added
 
--   styles.scss
--   index.js
--   index.test.js
+-   Ability to enable and disable individual ore types for calculation
+
+## [1.0.0] - 2020-10-07
+
+Initial push of EVE Echoes Industry Calculator
