@@ -1,3 +1,10 @@
+/**
+ * Copyright 2020 Nathan Kamenar
+ *
+ * This file is subject to the terms and conditions defined in file 'LICENSE.md',
+ * which can be found at https://github.com/nkamenar/EVE-Echoes-Industry-Calculator.
+ */
+
 if (!String.prototype.newStringFunc) {
 	String.prototype.toFormattedName = function () {
 		return this.toLowerCase().replace(' ', '');
