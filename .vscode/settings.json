@@ -1,0 +1,58 @@
+{
+	"[css]": {
+		"editor.foldingStrategy": "indentation"
+	},
+	"[html]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[javascript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[json]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[jsonc]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[scss]": {
+		"editor.foldingStrategy": "indentation"
+	},
+	"editor.detectIndentation": false,
+	"editor.formatOnPaste": true,
+	"editor.formatOnSave": true,
+	"editor.formatOnType": true,
+	"editor.insertSpaces": false,
+	"editor.tabCompletion": "on",
+	"files.exclude": {
+		"**/*.sln": true,
+		"**/.DS_Store": true,
+		"**/.git": true,
+		"**/.hg": true,
+		"**/.svn": true,
+		"**/.vs": true,
+		"**/CVS": true,
+		"**/bin": true,
+		"**/node_modules": true,
+		"**/obj": true,
+		"**/package-lock.json": true
+	},
+	"files.watcherExclude": {
+		"**/obj": true
+	},
+	"prettier.printWidth": 200,
+	"prettier.tabWidth": 4,
+	"prettier.trailingComma": "all",
+	"prettier.useTabs": true,
+	"emmet.includeLanguages": {
+		"aspnetcorerazor": "html",
+		"razor": "html",
+		"javascript": "javascriptreact"
+	},
+	"search.exclude": {
+		"**/dist": true,
+		"**/lib": true,
+		"**/obj": true,
+		"**/Migrations": true
+	},
+	"eslint.enable": true
+}
