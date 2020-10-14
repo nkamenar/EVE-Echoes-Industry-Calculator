@@ -1,3 +1,13 @@
+/**
+ * Copyright 2020 Nathan Kamenar
+ *
+ * This file is subject to the terms and conditions defined in file 'LICENSE.md',
+ * which can be found at https://github.com/nkamenar/EVE-Echoes-Industry-Calculator.
+ */
+/**
+ * @OnlyCurrentDoc
+ */
+
 if (!String.prototype.newStringFunc) {
 	String.prototype.toFormattedName = function () {
 		return this.toLowerCase().replace(' ', '');
@@ -39,14 +49,23 @@ const minerals = {
 	},
 };
 
+const planetaryMaterials = {};
+
 const ActiveSpreadsheet = SpreadsheetApp.getActive();
 
 // eslint-disable-next-line no-unused-vars
 function onEdit(e) {
 	try {
+		SpreadsheetApp.flush();
+		const craftComponentcell = ActiveSpreadsheet.getRangeByName('craftComponentButton').getCell(1, 1).getA1Notation();
+		const reprocessOresCell = ActiveSpreadsheet.getRangeByName('reprocessOresButton').getCell(1, 1).getA1Notation();
 		const componentNameCell = ActiveSpreadsheet.getRangeByName('selectedComponentName').getCell(1, 1).getA1Notation();
+		const costCalculationCell = ActiveSpreadsheet.getRangeByName('costCalculationSetting').getCell(1, 1).getA1Notation();
+		const costCalculationSettingValue = ActiveSpreadsheet.getRangeByName('costCalculationSetting').getCell(1, 1).getDisplayValue();
 		const reprocessingEfficiencyCells = getRangeA1Values(ActiveSpreadsheet.getRangeByName('oreReprocessingEfficiencyValues'));
 		const oreToggles = getRangeA1Values(ActiveSpreadsheet.getRangeByName('oreToggles'));
+		const oreOnHandCells = getRangeA1Values(ActiveSpreadsheet.getRangeByName('oreOnHand'));
+		const mineralsOnHandCells = getRangeA1Values(ActiveSpreadsheet.getRangeByName('mineralsOnHand'));
 
 		const optimizeForCell = ActiveSpreadsheet.getRangeByName('optimizeFor').getCell(1, 1).getA1Notation();
 		const materialEfficiencyCell = ActiveSpreadsheet.getRangeByName('materialEfficiency').getCell(1, 1).getA1Notation();
@@ -56,13 +75,18 @@ function onEdit(e) {
 		if (curSheet === 'Industry Calculator') {
 			const editedCell = e.range.getA1Notation();
 			//const editedCell = componentNameCell; // TESTING
-			if (
+			if (editedCell === craftComponentcell) craftComponent();
+			else if (editedCell === reprocessOresCell) reprocessOres();
+			else if (
 				editedCell === componentNameCell ||
 				editedCell === optimizeForCell ||
 				editedCell === materialEfficiencyCell ||
 				editedCell === optimizeForCell ||
+				editedCell === costCalculationCell ||
 				reprocessingEfficiencyCells.includes(editedCell) ||
-				oreToggles.includes(editedCell)
+				(oreToggles.includes(editedCell) && costCalculationSettingValue == 'Remainder') ||
+				(oreOnHandCells.includes(editedCell) && costCalculationSettingValue == 'Remainder') ||
+				mineralsOnHandCells.includes(editedCell)
 			) {
 				setLoadingStatus();
 				if (editedCell === componentNameCell) {
@@ -93,7 +117,7 @@ function getRangeA1Values(range) {
 }
 
 function calculateOresForComponent() {
-	getNeededMineralsFromSheet();
+	getNeededMineralsBasedOnMode();
 	const efficiencyTable = getDataArrayFromRangeByName('efficiencyTable');
 	const engine = LinearOptimizationService.createEngine();
 	initializeVariables(efficiencyTable, engine);
@@ -185,11 +209,21 @@ function configureOreCostObjectiveCoefficients(efficiencyTable, engine) {
 	}
 }
 
-function getNeededMineralsFromSheet() {
-	const range = ActiveSpreadsheet.getRangeByName('neededMinerals');
-	const data = range.getValues();
-	for (let i = 0; i < data[0].length; i++) {
-		minerals[data[0][i].toFormattedName()].needed = data[1][i];
+function getNeededMineralsBasedOnMode() {
+	const data = getDataArrayFromRangeByName('neededMinerals');
+	const costCalculationSettingValue = ActiveSpreadsheet.getRangeByName('costCalculationSetting').getCell(1, 1).getDisplayValue();
+
+	switch (costCalculationSettingValue) {
+		case 'Full Component':
+			for (let i = 0; i < data[0].length; i++) {
+				minerals[data[0][i].toFormattedName()].needed = data[2][i];
+			}
+			break;
+		case 'Remainder':
+			for (let i = 0; i < data[0].length; i++) {
+				minerals[data[0][i].toFormattedName()].needed = data[1][i];
+			}
+			break;
 	}
 }
 
@@ -284,24 +318,186 @@ function writeComponentData(componentData) {
 
 function setLoadingStatus() {
 	const statusBar = ActiveSpreadsheet.getRangeByName('statusBar');
+	const borderLeft = ActiveSpreadsheet.getRangeByName('borderLeft');
+	const borderRight = ActiveSpreadsheet.getRangeByName('borderRight');
+	const borderBottom = ActiveSpreadsheet.getRangeByName('borderBottom');
 	statusBar.getCell(1, 1).setValue('Calculating please wait . . .');
 	statusBar.setBackground('#E69138');
+	borderLeft.setBackground('#E69138');
+	borderRight.setBackground('#E69138');
+	borderBottom.setBackground('#E69138');
+	SpreadsheetApp.flush();
 }
 
 function unsetLoadingStatus() {
 	const statusBar = ActiveSpreadsheet.getRangeByName('statusBar');
+	const borderLeft = ActiveSpreadsheet.getRangeByName('borderLeft');
+	const borderRight = ActiveSpreadsheet.getRangeByName('borderRight');
+	const borderBottom = ActiveSpreadsheet.getRangeByName('borderBottom');
+	ActiveSpreadsheet.getRangeByName('craftComponentButton').getCell(1, 1).setValue('FALSE');
+	ActiveSpreadsheet.getRangeByName('reprocessOresButton').getCell(1, 1).setValue('FALSE');
 	statusBar.getCell(1, 1).setValue('');
 	statusBar.setBackground('#3D85C6');
+	borderLeft.setBackground('#434343');
+	borderRight.setBackground('#434343');
+	borderBottom.setBackground('#434343');
+	SpreadsheetApp.flush();
 }
 
-function setErrorStatus() {
+function setErrorStatus(message = 'ERROR: There was a problem processing your selection.') {
 	const statusBar = ActiveSpreadsheet.getRangeByName('statusBar');
-	statusBar.getCell(1, 1).setValue('ERROR: There was a problem processing your selection.');
+	const borderLeft = ActiveSpreadsheet.getRangeByName('borderLeft');
+	const borderRight = ActiveSpreadsheet.getRangeByName('borderRight');
+	const borderBottom = ActiveSpreadsheet.getRangeByName('borderBottom');
+	ActiveSpreadsheet.getRangeByName('craftComponentButton').getCell(1, 1).setValue('FALSE');
+	ActiveSpreadsheet.getRangeByName('reprocessOresButton').getCell(1, 1).setValue('FALSE');
+	statusBar.getCell(1, 1).setValue(message);
 	statusBar.setBackground('#CC0000');
+	borderLeft.setBackground('#CC0000');
+	borderRight.setBackground('#CC0000');
+	borderBottom.setBackground('#CC0000');
+	SpreadsheetApp.flush();
 }
 
 function setNotSolutionStatus() {
 	const statusBar = ActiveSpreadsheet.getRangeByName('statusBar');
+	const borderLeft = ActiveSpreadsheet.getRangeByName('borderLeft');
+	const borderRight = ActiveSpreadsheet.getRangeByName('borderRight');
+	const borderBottom = ActiveSpreadsheet.getRangeByName('borderBottom');
 	statusBar.getCell(1, 1).setValue('ERROR: A solution was not possible. Try enabling more ores.');
 	statusBar.setBackground('#CC0000');
+	borderLeft.setBackground('#CC0000');
+	borderRight.setBackground('#CC0000');
+	borderBottom.setBackground('#CC0000');
+	SpreadsheetApp.flush();
+}
+
+// eslint-disable-next-line no-unused-vars
+function craftComponent() {
+	setLoadingStatus();
+	const enoughMinerals = checkHaveMineralsForComponent();
+	const enoughPlanetaryMaterials = checkHavePlanertaryMaterialsForComponent();
+	if (enoughMinerals && enoughPlanetaryMaterials) {
+		subtractComponentResources();
+		writeComponentResources();
+		calculateOresForComponent();
+		unsetLoadingStatus();
+	} else {
+		unsetLoadingStatus();
+		SpreadsheetApp.getUi().alert('Not enough resources to craft component. Do you need to reprocess ores?');
+	}
+}
+
+function checkHaveMineralsForComponent() {
+	const neededMinerals = getDataArrayFromRangeByName('neededMinerals');
+	const onHandMinerals = getDataArrayFromRangeByName('mineralsOnHand');
+	let rv = true;
+
+	for (let i = 0; i < neededMinerals[0].length; i++) {
+		minerals[neededMinerals[0][i].toFormattedName()].needed = neededMinerals[2][i];
+		minerals[neededMinerals[0][i].toFormattedName()].current = onHandMinerals[i][0];
+		if (neededMinerals[2][i] > onHandMinerals[i][0]) rv = false;
+	}
+	return rv;
+}
+
+function checkHavePlanertaryMaterialsForComponent() {
+	const neededplanetaryMaterials = getDataArrayFromRangeByName('planetaryMaterialNeeds');
+	const onHandPlanetaryMaterials = getDataArrayFromRangeByName('planetaryMaterialsOnHand');
+	let rv = true;
+
+	for (let i = 0; i < neededplanetaryMaterials.length; i++) {
+		planetaryMaterials[neededplanetaryMaterials[i][0].toFormattedName()] = { needed: neededplanetaryMaterials[i][2], current: onHandPlanetaryMaterials[i][0] };
+		if (neededplanetaryMaterials[i][2] > onHandPlanetaryMaterials[i][0]) rv = false;
+	}
+	return rv;
+}
+
+function subtractComponentResources() {
+	checkHaveMineralsForComponent();
+	checkHavePlanertaryMaterialsForComponent();
+	for (const iter in minerals) {
+		minerals[iter].current -= minerals[iter].needed;
+	}
+	for (const iter in planetaryMaterials) {
+		planetaryMaterials[iter].current -= planetaryMaterials[iter].needed;
+	}
+}
+
+function writeComponentResources() {
+	const mineralArr = [];
+	for (const iter in minerals) {
+		mineralArr.push([minerals[iter].current]);
+	}
+	const planetaryMaterialArr = [];
+	for (const iter in planetaryMaterials) {
+		planetaryMaterialArr.push([planetaryMaterials[iter].current]);
+	}
+	ActiveSpreadsheet.getRangeByName('mineralsOnHand').setValues(mineralArr);
+	ActiveSpreadsheet.getRangeByName('planetaryMaterialsOnHand').setValues(planetaryMaterialArr);
+	SpreadsheetApp.flush();
+}
+
+// eslint-disable-next-line no-unused-vars
+function reprocessOres() {
+	try {
+		setLoadingStatus();
+		const onHandReprocessesArr = flattenDataArray(getDataArrayFromRangeByName('onHandReprocesses'));
+		const onHandOresArr = flattenDataArray(getDataArrayFromRangeByName('oreOnHand'));
+		const mineralsToAdd = calculateReprocessMinerals(onHandReprocessesArr);
+		const onHandMinerals = flattenDataArray(getDataArrayFromRangeByName('mineralsOnHand'));
+		const newMineralsOnHand = sumArrays(mineralsToAdd, onHandMinerals);
+		ActiveSpreadsheet.getRangeByName('mineralsOnHand').setValues(flatArrayToSingleColumn(newMineralsOnHand));
+		let newOresOnHand = [];
+		for (let i = 0; i < onHandOresArr.length; i++) {
+			newOresOnHand.push(onHandOresArr[i] - 100 * onHandReprocessesArr[i]);
+		}
+		ActiveSpreadsheet.getRangeByName('oreOnHand').setValues(flatArrayToSingleColumn(newOresOnHand));
+		unsetLoadingStatus();
+	} catch (error) {
+		setErrorStatus();
+	}
+}
+
+function calculateReprocessMinerals(onHandReprocessesArr) {
+	const rv = [];
+	for (const mineral in minerals) {
+		const mineralReprocessData = flattenDataArray(getDataArrayFromRangeByName(`${mineral}ReprocessValues`));
+		rv.push(Math.round(sumProductArrays(onHandReprocessesArr, mineralReprocessData)));
+	}
+	return rv;
+}
+
+function flattenDataArray(arr) {
+	const rv = [];
+	arr.map((row) => {
+		row.map((cell) => {
+			rv.push(cell);
+		});
+	});
+	return rv;
+}
+
+function flatArrayToSingleColumn(arr) {
+	const rv = [];
+	arr.map((val) => {
+		rv.push([val]);
+	});
+	return rv;
+}
+
+function sumProductArrays(left, right) {
+	let sum = 0;
+	for (let i = 0; i < left.length; i++) {
+		sum += left[i] * right[i];
+	}
+	return sum;
+}
+
+function sumArrays(left, right) {
+	let sum = [];
+	for (let i = 0; i < left.length; i++) {
+		sum.push(left[i] + right[i]);
+	}
+	return sum;
 }
