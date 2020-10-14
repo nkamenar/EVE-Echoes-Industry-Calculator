@@ -4,6 +4,9 @@
  * This file is subject to the terms and conditions defined in file 'LICENSE.md',
  * which can be found at https://github.com/nkamenar/EVE-Echoes-Industry-Calculator.
  */
+/**
+ * @OnlyCurrentDoc
+ */
 
 if (!String.prototype.newStringFunc) {
 	String.prototype.toFormattedName = function () {
@@ -54,6 +57,8 @@ const ActiveSpreadsheet = SpreadsheetApp.getActive();
 function onEdit(e) {
 	try {
 		SpreadsheetApp.flush();
+		const craftComponentcell = ActiveSpreadsheet.getRangeByName('craftComponentButton').getCell(1, 1).getA1Notation();
+		const reprocessOresCell = ActiveSpreadsheet.getRangeByName('reprocessOresButton').getCell(1, 1).getA1Notation();
 		const componentNameCell = ActiveSpreadsheet.getRangeByName('selectedComponentName').getCell(1, 1).getA1Notation();
 		const costCalculationCell = ActiveSpreadsheet.getRangeByName('costCalculationSetting').getCell(1, 1).getA1Notation();
 		const costCalculationSettingValue = ActiveSpreadsheet.getRangeByName('costCalculationSetting').getCell(1, 1).getDisplayValue();
@@ -70,7 +75,9 @@ function onEdit(e) {
 		if (curSheet === 'Industry Calculator') {
 			const editedCell = e.range.getA1Notation();
 			//const editedCell = componentNameCell; // TESTING
-			if (
+			if (editedCell === craftComponentcell) craftComponent();
+			else if (editedCell === reprocessOresCell) reprocessOres();
+			else if (
 				editedCell === componentNameCell ||
 				editedCell === optimizeForCell ||
 				editedCell === materialEfficiencyCell ||
@@ -327,6 +334,8 @@ function unsetLoadingStatus() {
 	const borderLeft = ActiveSpreadsheet.getRangeByName('borderLeft');
 	const borderRight = ActiveSpreadsheet.getRangeByName('borderRight');
 	const borderBottom = ActiveSpreadsheet.getRangeByName('borderBottom');
+	ActiveSpreadsheet.getRangeByName('craftComponentButton').getCell(1, 1).setValue('FALSE');
+	ActiveSpreadsheet.getRangeByName('reprocessOresButton').getCell(1, 1).setValue('FALSE');
 	statusBar.getCell(1, 1).setValue('');
 	statusBar.setBackground('#3D85C6');
 	borderLeft.setBackground('#434343');
@@ -340,6 +349,8 @@ function setErrorStatus(message = 'ERROR: There was a problem processing your se
 	const borderLeft = ActiveSpreadsheet.getRangeByName('borderLeft');
 	const borderRight = ActiveSpreadsheet.getRangeByName('borderRight');
 	const borderBottom = ActiveSpreadsheet.getRangeByName('borderBottom');
+	ActiveSpreadsheet.getRangeByName('craftComponentButton').getCell(1, 1).setValue('FALSE');
+	ActiveSpreadsheet.getRangeByName('reprocessOresButton').getCell(1, 1).setValue('FALSE');
 	statusBar.getCell(1, 1).setValue(message);
 	statusBar.setBackground('#CC0000');
 	borderLeft.setBackground('#CC0000');
@@ -363,15 +374,16 @@ function setNotSolutionStatus() {
 
 // eslint-disable-next-line no-unused-vars
 function craftComponent() {
+	setLoadingStatus();
 	const enoughMinerals = checkHaveMineralsForComponent();
 	const enoughPlanetaryMaterials = checkHavePlanertaryMaterialsForComponent();
 	if (enoughMinerals && enoughPlanetaryMaterials) {
-		setLoadingStatus();
 		subtractComponentResources();
 		writeComponentResources();
 		calculateOresForComponent();
 		unsetLoadingStatus();
 	} else {
+		unsetLoadingStatus();
 		SpreadsheetApp.getUi().alert('Not enough resources to craft component. Do you need to reprocess ores?');
 	}
 }
@@ -428,8 +440,8 @@ function writeComponentResources() {
 
 // eslint-disable-next-line no-unused-vars
 function reprocessOres() {
-	setLoadingStatus();
 	try {
+		setLoadingStatus();
 		const onHandReprocessesArr = flattenDataArray(getDataArrayFromRangeByName('onHandReprocesses'));
 		const onHandOresArr = flattenDataArray(getDataArrayFromRangeByName('oreOnHand'));
 		const mineralsToAdd = calculateReprocessMinerals(onHandReprocessesArr);
@@ -441,10 +453,10 @@ function reprocessOres() {
 			newOresOnHand.push(onHandOresArr[i] - 100 * onHandReprocessesArr[i]);
 		}
 		ActiveSpreadsheet.getRangeByName('oreOnHand').setValues(flatArrayToSingleColumn(newOresOnHand));
+		unsetLoadingStatus();
 	} catch (error) {
 		setErrorStatus();
 	}
-	unsetLoadingStatus();
 }
 
 function calculateReprocessMinerals(onHandReprocessesArr) {
