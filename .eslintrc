@@ -6,7 +6,7 @@
 		"node": true
 	},
 	"extends": ["eslint:recommended", "plugin:prettier/recommended"],
-	"globals": { "SpreadsheetApp": true, "LinearOptimizationService": true },
+	"globals": { "SpreadsheetApp": true, "LinearOptimizationService": true, "Utilities": true },
 	"parserOptions": {
 		"ecmaVersion": 2018,
 		"sourceType": "module"
