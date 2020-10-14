@@ -372,10 +372,7 @@ function craftComponent() {
 		calculateOresForComponent();
 		unsetLoadingStatus();
 	} else {
-		setErrorStatus('Not enough resources to craft component. Do you need to reprocess ores?');
-		SpreadsheetApp.flush();
-		Utilities.sleep(5000);
-		unsetLoadingStatus();
+		SpreadsheetApp.getUi().alert('Not enough resources to craft component. Do you need to reprocess ores?');
 	}
 }
 
