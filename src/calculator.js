@@ -463,7 +463,7 @@ function calculateReprocessMinerals(onHandReprocessesArr) {
 	const rv = [];
 	for (const mineral in minerals) {
 		const mineralReprocessData = flattenDataArray(getDataArrayFromRangeByName(`${mineral}ReprocessValues`));
-		rv.push(Math.round(sumProductArrays(onHandReprocessesArr, mineralReprocessData)));
+		rv.push(Math.floor(sumProductFloorArrays(onHandReprocessesArr, mineralReprocessData)));
 	}
 	return rv;
 }
@@ -486,10 +486,10 @@ function flatArrayToSingleColumn(arr) {
 	return rv;
 }
 
-function sumProductArrays(left, right) {
+function sumProductFloorArrays(left, right) {
 	let sum = 0;
 	for (let i = 0; i < left.length; i++) {
-		sum += left[i] * right[i];
+		sum += Math.floor(left[i] * right[i]);
 	}
 	return sum;
 }
